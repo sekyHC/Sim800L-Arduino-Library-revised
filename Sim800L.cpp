@@ -552,26 +552,26 @@ String Sim800L::getNumberSms(uint8_t index)
 String Sim800L::readSms(uint8_t index)
 {
     // Can take up to 5 seconds
-
-    if(( _readSerial(5000).indexOf("ER")) != -1)
-    {
-    	return "";
-    }
-
     this->SoftwareSerial::print (F("AT+CMGR="));
     this->SoftwareSerial::print (index);
-    this->SoftwareSerial::print ("\r");
-    _buffer=_readSerial();
-    //Serial.println(_buffer);
-    if (_buffer.indexOf("CMGR") == -1)
+    this->SoftwareSerial::print (F("\r"));
+    _buffer=_readSerial(5000);
+    // Serial.println(_buffer);
+    if (_buffer.indexOf("ERR") != -1)
     {
+        Serial.println(F("Error found"));
+        return "";
+    }
+    byte cmgr_position;
+    if ((cmgr_position =_buffer.indexOf(F("+CMGR:"))) == -1)
+    {
+        Serial.println(F("CMGR not found"));
     	return "";
     }
 
-	_buffer = _readSerial(10000);
-	byte first = _buffer.indexOf('\n', 2) + 1;
+	byte first = _buffer.indexOf('\n', cmgr_position + 2) + 1;
 	byte second = _buffer.indexOf('\n', first);
-    return _buffer.substring(first, second);
+    return _buffer.substring(first, second - 1);
 }
 
 

@@ -556,7 +556,7 @@ String Sim800L::readSms(uint8_t index)
     this->SoftwareSerial::print (index);
     this->SoftwareSerial::print (F("\r"));
     _buffer=_readSerial(5000);
-    // Serial.println(_buffer);
+    Serial.println(_buffer);
     if (_buffer.indexOf("ERR") != -1)
     {
         Serial.println(F("Error found"));
@@ -574,6 +574,46 @@ String Sim800L::readSms(uint8_t index)
     return _buffer.substring(first, second - 1);
 }
 
+String Sim800L::readSms(uint8_t index, char* number)
+{
+    /*
+    AT+CMGR=50
+
++CMGR: "REC UNREAD","+384989754515","","21/03/21,14:03:54+04"
+1 on
+    */
+    // Can take up to 5 seconds
+    this->SoftwareSerial::print (F("AT+CMGR="));
+    this->SoftwareSerial::print (index);
+    this->SoftwareSerial::print (F("\r"));
+    _buffer=_readSerial(5000);
+    Serial.println(_buffer);
+    if (_buffer.indexOf("ERR") != -1)
+    {
+        Serial.println(F("Error found"));
+        return "";
+    }
+    byte cmgr_position;
+    if ((cmgr_position = _buffer.indexOf(F("+CMGR:"))) == -1)
+    {
+        Serial.println(F("CMGR not found"));
+    	return "";
+    }
+
+    byte first_comma, second_comma;
+    first_comma = _buffer.indexOf(',');
+    second_comma = _buffer.indexOf(',', first_comma + 1);
+
+    Serial.println(first_comma);
+    Serial.println(second_comma);
+
+    _buffer.substring(first_comma + 2, second_comma - 1).toCharArray(number, second_comma - first_comma - 2);
+    number[second_comma - first_comma - 3] = '\0';
+
+	byte first = _buffer.indexOf('\n', cmgr_position + 2) + 1;
+	byte second = _buffer.indexOf('\n', first);
+    return _buffer.substring(first, second - 1);
+}
 
 bool Sim800L::delAllSms()
 {
@@ -716,16 +756,16 @@ String Sim800L::_readSerial(uint32_t timeout)
 
     uint64_t timeOld = millis();
 
-    while (!this->SoftwareSerial::available() && !(millis() > timeOld + timeout))
+    while(!this->SoftwareSerial::available() && !(millis() > timeOld + timeout))
     {
         delay(13);
     }
 
     String str;
 
-    while(this->SoftwareSerial::available())
+    while(this->SoftwareSerial::available() || (millis() < timeOld + timeout))
     {
-        if (this->SoftwareSerial::available()>0)
+        if(this->SoftwareSerial::available() > 0)
         {
             str += (char) this->SoftwareSerial::read();
         }

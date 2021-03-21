@@ -132,6 +132,7 @@ public:
 	bool prepareForSmsReceive();
     bool sendSms(char* number,char* text);
     String readSms(uint8_t index);
+    String readSms(uint8_t index, char* number);
     String getNumberSms(uint8_t index);
     bool delAllSms();
 
